@@ -1,0 +1,14 @@
+Command line:
+./scripts/ckptscript_test.sh perlbench 1
+================= Hardcoded directories ==================
+GEM5_PATH:                                     /localhome/ygk1/gem5
+SPEC_PATH:                                     /localhome/ygk1/spec2017
+==================== Script inputs =======================
+BENCHMARK:                                    perlbench
+OUTPUT_DIR:                                   /localhome/ygk1/gem5/output/multiprogram_8Gmem_100K.C1/checkpoint_out/perlbench
+==========================================================
+
+
+--------- Here goes nothing! Starting gem5! ------------
+
+
