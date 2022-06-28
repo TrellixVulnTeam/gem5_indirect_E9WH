@@ -355,14 +355,20 @@ def config_cache(options, system):
         system.cpu[i].createInterruptController()
 
         if options.l2cache and options.l3cache:
-            system.cpu[i].l2 =  l2_cache_class(clk_domain=system.cpu_clk_domain,
-                                   **_get_cache_opts('l2', options))
-
-            system.cpu[i].tol2bus =  L2XBar(clk_domain = system.cpu_clk_domain)
-            system.cpu[i].l2.cpu_side = system.cpu[i].tol2bus.master
-            system.cpu[i].l2.mem_side = system.tol3bus.slave
+            print(i)
+            if(i%2==0):
+                system.cpu[i].l2 =  l2_cache_class(clk_domain=system.cpu_clk_domain,
+                                    **_get_cache_opts('l2', options))
+                system.cpu[i].tol2bus =  L2XBar(clk_domain = system.cpu_clk_domain)
+                system.cpu[i].l2.cpu_side = system.cpu[i].tol2bus.master
+                system.cpu[i].l2.mem_side = system.tol3bus.slave
+                system.cpu[i].connectAllPorts(system.cpu[i].tol2bus, system.membus)
+            else:
+                #system.cpu[i].tol2bus = system.cpu[i-1].tol2bus
+                
+                system.cpu[i].connectAllPorts(system.cpu[i-1].tol2bus, system.membus)
             
-            system.cpu[i].connectAllPorts(system.cpu[i].tol2bus, system.membus)
+           #system.cpu[i].connectAllPorts(system.cpu[i].tol2bus, system.membus)
             
         # if options.l3cache:
         #     system.cpu[i].connectAllPorts(system.tol3bus,system.membus)

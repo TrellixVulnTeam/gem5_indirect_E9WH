@@ -19,7 +19,7 @@ else
 fi
 
 INST_TAKE_CHECKPOINT=100000 
-MAX_INSTS_CKPT= $((INST_TAKE_CHECKPOINT + 1)) 
+#MAX_INSTS_CKPT= $((INST_TAKE_CHECKPOINT + 1)) 
 MAX_INSTS=1000000000
 
 #simulate on gem5
@@ -63,18 +63,20 @@ done
 #     --prog-interval=0.003MHz \
 
 # echo "Check point done"
-
+# BENCH2= $EXE;$EXE
+# BENCH8 = $EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE
+# BENCH16 = $EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE
 #run gem5
  $GEM5_PATH/build/X86/gem5.opt /$GEM5_PATH/configs/example/se.py \
-  -o ./ \
-  --cmd=$EXE \
-  --num-cpus=8 \
-  --options="$args" --cpu-type TimingSimpleCPU \
+    -o ./ \
+    --num-cpus=2 \
+    --cmd="$EXE;$EXE" \
+    --options="$args;$args" --cpu-type TimingSimpleCPU \
     --caches --l2cache --l3cache \
     --l1d_size=32kB --l1i_size=32kB --l2_size=2MB --l3_size=16MB \
     --l1d_assoc=8  --l1i_assoc=8 --l2_assoc=8 --l3_assoc=16  \
     --mem-size=8GB --mem-type=DDR4_2400_8x8\
     --maxinsts=$MAX_INSTS \
     --fast-forward=20000000000 \
-    --mirage_mode_l3=$SCHEME --l3_numSkews=4 --l3_TDR=1.50 --l3_EncrLat=3 \
+    --mirage_mode_l3=$SCHEME --l3_numSkews=2 --l3_TDR=1.75 --l3_EncrLat=3 \
     --prog-interval=300Hz 
