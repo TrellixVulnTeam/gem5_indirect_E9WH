@@ -45,8 +45,8 @@
  * Declaration of a base set associative tag store.
  */
 
-#ifndef __MEM_CACHE_TAGS_VWAY_TAGS_HH__
-#define __MEM_CACHE_TAGS_VWAY_TAGS_HH__
+#ifndef __MEM_CACHE_TAGS_INDIRECT_TAGS_HH__
+#define __MEM_CACHE_TAGS_INDIRECT_TAGS_HH__
 
 #include <cstdint>
 #include <functional>
@@ -64,8 +64,8 @@
 #include "mem/cache/tags/base.hh"
 #include "mem/cache/tags/indexing_policies/base.hh"
 #include "mem/packet.hh"
-#include "params/VwayTags.hh"
-#include "debug/VwayTags.hh"
+#include "params/IndirectTags.hh"
+#include "debug/IndirectTags.hh"
 
 #define DATA_REPL_RANDOM (0)
 #define DATA_REPL_REUSE  (1)
@@ -91,7 +91,7 @@ class ReplaceableEntry;
  * -- Pointer from Tag to Data and back, required for decoupled tag-data.
  * -- Serialized look up & Global Replacement (Random) required. Local Repl is backup.
  */
-class VwayTags : public BaseTags
+class IndirectTags : public BaseTags
 {
   protected:
     /** The Tag-to-Data ratio. */
@@ -134,17 +134,17 @@ class VwayTags : public BaseTags
     
   public:
     /** Convenience typedef. */
-    typedef VwayTagsParams Params;
+    typedef IndirectTagsParams Params;
 
     /**
      * Construct and initialize this tag store.
      */
-    VwayTags(const Params &p);
+    IndirectTags(const Params &p);
 
     /**
      * Destructor
      */
-    virtual ~VwayTags() {};
+    virtual ~IndirectTags() {};
 
     /**
      * Initialize blocks as CacheBlk instances.
@@ -169,6 +169,9 @@ class VwayTags : public BaseTags
     uint64_t
     get_blk_tagID(ReplaceableEntry *blk)
     {
+        uint64_t ways = blk->getWay();
+        if(ways >= assoc)
+            ways = (ways-8);
         return (blk->getSet()*assoc+blk->getWay());
     }
 
@@ -185,19 +188,19 @@ class VwayTags : public BaseTags
      */
     CacheBlk* accessBlock(const PacketPtr pkt, Cycles &lat) override
     {
-       
+        //printf("Get block\n");
         CacheBlk *blk = findBlock(pkt->getAddr(), pkt->isSecure());
-        
+        //printf("Returned block\n");
         // Access all tags in parallel, hence one in each way.  The data side
         // either accesses all blocks in parallel, or one block sequentially on
         // a hit.  Sequential access with a miss doesn't access data.
-        stats.tagAccesses += assoc;
+        stats.tagAccesses += (assoc + (TDR-1)*(assoc/TDR));
         if (sequentialAccess) {
             if (blk != nullptr) {
                 stats.dataAccesses += 1;
             }
         } else {
-            stats.dataAccesses += assoc;
+            stats.dataAccesses += (assoc + (TDR-1)*(assoc/TDR));
         }
 
         // If a cache hit
@@ -217,7 +220,7 @@ class VwayTags : public BaseTags
 
         // The tag lookup latency is the same for a hit or a miss
         lat = lookupLatency;
-
+        //printf("Returned block\n");
         return blk;
     }
 
@@ -236,7 +239,7 @@ class VwayTags : public BaseTags
                          std::vector<CacheBlk*>& evict_blks)
     {
         CacheBlk* victim;
-
+        
         // Get possible entries to be victimized
         const std::vector<ReplaceableEntry*> entries =
             indexingPolicy->getPossibleEntries(addr);
@@ -252,7 +255,7 @@ class VwayTags : public BaseTags
         if(!tag_victim->isValid() && (datarepl_get_vacant() != ((uint64_t)-1)) ){
             //**DONE-TODO**: return victim = invalid tag-victim
             victim = tag_victim;            
-            DPRINTF(VwayTags,"findVictim (Invalid) Scenario-A for Addr:%llx Victim:%llx \n",addr,victim->isValid()?regenerateBlkAddr(victim):-1);
+            DPRINTF(IndirectTags,"findVictim (Invalid) Scenario-A for Addr:%llx Victim:%llx \n",addr,victim->isValid()?regenerateBlkAddr(victim):-1);
 
             stats.replInvtagdata++;
 
@@ -264,7 +267,7 @@ class VwayTags : public BaseTags
             //No space in tag-set            
             //**DONE-TODO**: return victim =  valid tag-victim
             victim = tag_victim;
-            DPRINTF(VwayTags,"findVictim (Local-ValidTag) Scenario-B for Addr:%llx Victim:%llx \n",addr,victim->isValid()?regenerateBlkAddr(victim):-1);
+            DPRINTF(IndirectTags,"findVictim (Local-ValidTag) Scenario-B for Addr:%llx Victim:%llx \n",addr,victim->isValid()?regenerateBlkAddr(victim):-1);
             //std::printf("is valid case in find victim %#lx \n", addr);
             stats.replLocal++;
         }
@@ -289,7 +292,7 @@ class VwayTags : public BaseTags
             
             //**DONE-TODO**: return victim = data-victim.
             victim = data_victim;
-            DPRINTF(VwayTags,"findVictim (Global-ValidData) Scenario-C for Addr:%llx. Victim:%llx \n",addr,victim->isValid()?regenerateBlkAddr(victim):-1);
+            DPRINTF(IndirectTags,"findVictim (Global-ValidData) Scenario-C for Addr:%llx. Victim:%llx \n",addr,victim->isValid()?regenerateBlkAddr(victim):-1);
             //std::printf("is full data block case in find victim %#lx \n", addr);
             stats.replGlobal++;
         }
@@ -302,6 +305,7 @@ class VwayTags : public BaseTags
         // if(victim->isValid())
         //     std::printf("Block should work %#lx %d\n", addr, victim->isValid());
         //Return data-victim or tag-victim as appropriate.
+        
         return victim;
     }
 
@@ -315,13 +319,17 @@ class VwayTags : public BaseTags
     //**TODO**: make blk passed by reference!
     void insertBlock(const PacketPtr pkt, CacheBlk* &blk) override
     {        
+        
         //**DONE-TODO** Scenario-C: GLOBAL-REPL (blk=Data-Victim), Cache-Fill occurs in saved-tag-blk, not victim-blk
         if(saved_repl_tag_victim != NULL){
-            DPRINTF(VwayTags,"insertBlock Scenario-C for Addr:%llx. \n",pkt->getAddr());
+            DPRINTF(IndirectTags,"insertBlock Scenario-C for Addr:%llx. \n",pkt->getAddr());
 
             //Ensure saved tag-victim is in a valid set,way for pkt->addr
-            assert(saved_repl_tag_victim->getSet() ==                   \
-                   indexingPolicy->extractSet(pkt->getAddr(),saved_repl_tag_victim->getWay()) );
+            
+            assert((saved_repl_tag_victim->getSet() ==                   \
+                   indexingPolicy->extractSet(pkt->getAddr(),saved_repl_tag_victim->getWay()) ) \
+                   | (saved_repl_tag_victim->getSet() ==                   \
+                   indexingPolicy->extractSet(pkt->getAddr(),saved_repl_tag_victim->getWay()+8)));
 
             //**DONE-TODO**: Check there is a invalidated data-victim
             assert(datarepl_get_vacant()!=((uint64_t)-1));
@@ -329,6 +337,7 @@ class VwayTags : public BaseTags
             //**DONE-TODO**: Switch the blk(data-victim) and tag-victim
             blk = saved_repl_tag_victim;
             saved_repl_tag_victim = NULL;
+            
             
             
         }
@@ -341,7 +350,10 @@ class VwayTags : public BaseTags
             assert(datarepl_get_vacant() != ((uint64_t)-1));
 
             //**DONE-TODO**: Ensure that pkt->addr has Set-Match with victim (tag-victim)
-            assert(blk->getSet() == indexingPolicy->extractSet(pkt->getAddr(),blk->getWay()));
+            
+            assert((blk->getSet() == indexingPolicy->extractSet(pkt->getAddr(),blk->getWay())) | \
+            (blk->getSet() == indexingPolicy->extractSet(pkt->getAddr(),blk->getWay()+8)));
+            
             //std::printf("case 2: cache fill in victim tag\n");
         }
         //**DONE-TODO**: ALLOCATE DATA:  blk should not have a datablk
@@ -353,8 +365,8 @@ class VwayTags : public BaseTags
                "Vacancy should've been created already by getVictim()\n");
         assert((datablk_tagID[vacant_datablk_index] == (uint64_t)-1) && \
                "Vacant datablk should not have a tag-blk pointing to it. \n" );
-
-        //**DONE-TODO** Set data-blk pointer in tag-blk.
+        
+        //**DONE-TODO** data-blk pointer in tag-blk.
         blk->data = &dataBlks[blkSize*vacant_datablk_index];
         blk_dataID[get_blk_tagID(blk)] = vacant_datablk_index;            
         //**DONE-TODO** Set tagID pointer in datablk
@@ -364,7 +376,7 @@ class VwayTags : public BaseTags
         //**DONE-TODO** Remove the vacant datablk from data_repl queues
         datarepl_remove_vacant(vacant_datablk_index);            
 
-        
+       
         // Insert block
         BaseTags::insertBlock(pkt, blk);
         
@@ -373,6 +385,7 @@ class VwayTags : public BaseTags
 
         // Update replacement policy
         replacementPolicy->reset(blk->replacementData, pkt);
+        
         
     }
 
@@ -411,7 +424,7 @@ class VwayTags : public BaseTags
     //**DONE-TODO**: add_vacant: adds index to the end of this queue.
     void datarepl_add_vacant(uint64_t datablk_index){
         datarepl_vacant_queue.push(datablk_index);
-        DPRINTF(VwayTags,"Datablk_index:%llu, numDataBlocks:%llu, vacantQueue_sz:%llu\n",datablk_index, numDataBlocks,datarepl_vacant_queue.size());
+        DPRINTF(IndirectTags,"Datablk_index:%llu, numDataBlocks:%llu, vacantQueue_sz:%llu\n",datablk_index, numDataBlocks,datarepl_vacant_queue.size());
         assert(datarepl_vacant_queue.size() <= numDataBlocks);        
     }
 

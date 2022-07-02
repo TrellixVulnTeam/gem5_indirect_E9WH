@@ -46,7 +46,10 @@ namespace replacement_policy
 RandomSkewfairRP::RandomSkewfairRP(const Params &p)
   : Base(p),
     numSkews(p.numSkews),
-    assoc(p.assoc)
+    assoc(p.assoc),
+    randomizedIndirectIndexing(p.randomizedIndirectIndexing),
+    randomizedIndexing(p.randomizedIndexing),
+    TDR(p.TDR)
 {
   //DPRINTFN("For Random Skew-Fair replacement policy: numSkews:%d, assoc:%d. \n",numSkews,assoc);
 }
@@ -85,7 +88,10 @@ RandomSkewfairRP::getVictim(const ReplacementCandidates& candidates) const
                                                                    candidates.size() - 1)];
 
   //Ensure number of victim candidates == assoc
-  assert(candidates.size() == assoc);
+  if(randomizedIndexing)
+    assert(candidates.size() == assoc);
+  else if(randomizedIndirectIndexing)
+    assert(candidates.size() == (assoc + (TDR-1)*assoc/TDR));
 
   // int k=0;
   // for (const auto& candidate : candidates) {
@@ -107,8 +113,20 @@ RandomSkewfairRP::getVictim(const ReplacementCandidates& candidates) const
   for (const auto& candidate : candidates) {
     if (!std::static_pointer_cast<RandomReplData>
         (candidate->replacementData)->valid) {
-      int skew_id = candidate->getWay() / (assoc/numSkews);
-      invalid_per_skew[skew_id]++;
+      if(randomizedIndirectIndexing == true){
+        //printf("random skew replacementt .cc getting skew id\n");
+        int skew_id;
+        if(candidate->getWay()<(assoc/TDR))
+          skew_id = candidate->getWay() / ((assoc + (TDR-1)*assoc/TDR)/numSkews);
+        else
+          skew_id = (candidate->getWay()-(assoc/TDR))/4 + 2;
+        invalid_per_skew[skew_id]++;
+      } 
+      else
+      { 
+        int skew_id = candidate->getWay() / (assoc/numSkews);
+        invalid_per_skew[skew_id]++;
+      }
     }
   }
 
@@ -131,7 +149,22 @@ RandomSkewfairRP::getVictim(const ReplacementCandidates& candidates) const
   // k=0;
   if(invalid_per_skew[max_invalid_skew]){
     for (const auto& candidate : candidates) {
-      int skew_id = candidate->getWay() / (assoc/numSkews);
+      int skew_id;
+      if(randomizedIndirectIndexing == true){
+        //printf("random skew replacementt .cc getting skew id\n");
+        
+        if(candidate->getWay()<(assoc/TDR))
+          skew_id = candidate->getWay() / ((assoc + (TDR-1)*assoc/TDR)/numSkews);
+        else
+          skew_id = (candidate->getWay()-(assoc/TDR))/4 + 2;
+        
+      } 
+      else
+      { 
+         skew_id = candidate->getWay() / (assoc/numSkews);
+        
+      }
+    
       if ((!std::static_pointer_cast<RandomReplData>(candidate->replacementData)->valid) &&
           (skew_id == max_invalid_skew))
         {

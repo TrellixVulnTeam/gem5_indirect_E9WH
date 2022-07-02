@@ -97,7 +97,7 @@ class SkewedAssocRandIndirect : public BaseIndexingPolicy
     // used for rand-table, to mask out bits of
     // address that arent part of memory-addr
     uint64_t lines_in_mem; 
-    
+    uint64_t assoc_effective;
     /** Randomization-Table for mapping PLA->ELA */    
     std::vector<std::vector<int64_t>> rand_table_vec; 
 
@@ -114,7 +114,7 @@ class SkewedAssocRandIndirect : public BaseIndexingPolicy
   public:
     /** Convenience typedef. */
     typedef SkewedAssocRandIndirectParams Params;
-
+    
     /**
      * Construct and initialize this policy.
      */
@@ -146,6 +146,7 @@ class SkewedAssocRandIndirect : public BaseIndexingPolicy
         /* DPRINTF(gem5::debug::Cache,"extractTag=> Address %lld, Tag %lld \n", \
                  addr,addr >> setShift);
         */
+        
         return (addr >> setShift);
     }
     

@@ -162,6 +162,7 @@ Cache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
               PacketList &writebacks)
 {
 
+    //printf("access packet request in the cache.cc\n");
     if (pkt->req->isUncacheable()) {
         assert(pkt->isRequest());
 

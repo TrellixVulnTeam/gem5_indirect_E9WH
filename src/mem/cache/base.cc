@@ -197,6 +197,7 @@ BaseCache::init()
         fatal("Cache ports on %s are not connected\n", name());
     cpuSidePort.sendRangeChange();
     forwardSnoops = cpuSidePort.isSnooping();
+    
 }
 
 Port &
@@ -1157,7 +1158,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 {
     // sanity check
     assert(pkt->isRequest());
-
+    //printf("access started\n");
     chatty_assert(!(isReadOnly && pkt->isWrite()),
                   "Should never see a write in a read-only cache %s\n",
                   name());
@@ -1436,6 +1437,8 @@ CacheBlk*
 BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
                       bool allocate)
 {
+
+    //printf("handle fill started\n");
     assert(pkt->isResponse());
     Addr addr = pkt->getAddr();
     bool is_secure = pkt->isSecure();
@@ -1458,7 +1461,7 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
             // No replaceable block or a mostly exclusive
             // cache... just use temporary storage to complete the
             // current request and then get rid of it
-            std::printf("Block guaranteed for %#lx\n", addr);
+            //std::printf("Block guaranteed for %#lx\n", addr);
             blk = tempBlock;
             tempBlock->insert(addr, is_secure);
             DPRINTF(Cache, "using temp block for %#llx (%s)\n", addr,
@@ -1471,12 +1474,11 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
         // existing block... probably an upgrade
         // don't clear block status... if block is already dirty we
         // don't want to lose that
-         std::printf("should not be here %#lx %d allocate=%d\n", addr, blk->isValid(), allocate);
+         //std::printf("should not be here %#lx %d allocate=%d\n", addr, blk->isValid(), allocate);
     }
 
     // Block is guaranteed to be valid at this point
-    if(!blk->isValid())
-        std::printf("Block should work %#lx %d allocate=%d\n", addr, blk->isValid(), allocate);
+    
     assert(blk->isValid());
     assert(blk->isSecure() == is_secure);
     assert(regenerateBlkAddr(blk) == addr);
@@ -1531,7 +1533,7 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
     // The block will be ready when the payload arrives and the fill is done
     blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
                       pkt->payloadDelay);
-
+    //printf("handle fill done\n");
     return blk;
 }
 
@@ -1578,8 +1580,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     if (!handleEvictions(evict_blks, writebacks)) {
         return nullptr;
     }
-    if(victim->isValid())
-        std::printf("after handling eviction address = %#lx is valid\n", addr);
+    
     
     // If using a compressor, set compression data. This must be done after
     // insertion, as the compression bit may be set.
@@ -1589,11 +1590,9 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     }
     // Insert new block at victimized entry
     tags->insertBlock(pkt, victim);
-    if(!victim->isValid())
-        std::printf("after insertion address = %#lx is invalid\n", addr);
+    
     //if(addr==0x12cee00)
-    if(!victim->isValid())
-        std::printf("allocated address = %#lx is invalid\n", addr);
+    
     return victim;
 }
 

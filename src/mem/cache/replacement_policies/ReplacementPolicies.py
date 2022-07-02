@@ -93,6 +93,9 @@ class RandomSkewfairRP(BaseReplacementPolicy):
     cxx_header = "mem/cache/replacement_policies/random_skewfair_rp.hh"
     numSkews = Param.Unsigned(Parent.numSkews,"Number of Skews")
     assoc = Param.Int(Parent.tags.assoc, "Number of victim candidates")
+    randomizedIndexing = Param.Bool(Parent.randomizedIndexing, "Enables Randomized Indexing with QARMA")
+    randomizedIndirectIndexing = Param.Bool(Parent.randomizedIndirectIndexing, "Enables Randomized Indexing with QARMA")
+    TDR = Param.Float(Parent.TDR, "Tag-to-Data ratio")
 
 class BRRIPRP(BaseReplacementPolicy):
     type = 'BRRIPRP'

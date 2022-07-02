@@ -51,6 +51,9 @@ class RandomSkewfairRP : public Base
   private:
     const int numSkews ; //number of skews
     const int assoc ; // number of vict-candidates
+    bool randomizedIndirectIndexing;
+    bool randomizedIndexing;
+    double TDR;
 
   protected:
     /** MRU-specific implementation of replacement data. */

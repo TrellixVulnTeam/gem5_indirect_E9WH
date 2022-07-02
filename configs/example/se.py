@@ -101,7 +101,7 @@ def get_processes(args):
         if len(inputs) > idx:
             process.input = inputs[idx]
         if len(outputs) > idx:
-            process.output = outputs[idx]
+            process.output = outputs[0]
         if len(errouts) > idx:
             process.errout = errouts[idx]
 

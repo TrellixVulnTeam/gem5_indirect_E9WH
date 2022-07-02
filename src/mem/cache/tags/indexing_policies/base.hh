@@ -72,6 +72,8 @@ class BaseIndexingPolicy : public SimObject
      */
     const unsigned assoc;
 
+    const double TDR;
+
     /**
      * The number of sets in the cache.
      */

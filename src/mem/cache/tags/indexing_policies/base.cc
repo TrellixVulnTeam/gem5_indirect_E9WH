@@ -56,7 +56,7 @@ namespace gem5
 {
 
 BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
-    : SimObject(p), assoc(p.assoc),
+    : SimObject(p), assoc(p.assoc), TDR(p.TDR),
       numSets(p.size / (p.entry_size * assoc)),
       setShift(floorLog2(p.entry_size)), setMask(numSets - 1), sets(numSets),
       tagShift(setShift + floorLog2(numSets))

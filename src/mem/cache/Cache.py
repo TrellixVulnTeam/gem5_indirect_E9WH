@@ -107,7 +107,7 @@ class BaseCache(ClockedObject):
     #V-way cache
     vwayCache  = Param.Bool(False, "Enables v-way cache with with decoupled tag-store")
     TDR =  Param.Float(1.5, "Specifies the Tag-to-Data ratio for V-way cache")
-    
+    indirectCache  = Param.Bool(False, "Enables indirect cache with with decoupled tag-store")
     #Skewed Randomized V-way cache
     p2_on_conflict = Param.Bool(False, "Enables preferential choice of skew on conflict")
     cuckoo_on_conflict = Param.Bool(False, "Enables refill on conflict")

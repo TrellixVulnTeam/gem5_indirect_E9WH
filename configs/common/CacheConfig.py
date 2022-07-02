@@ -125,7 +125,7 @@ def config_cache(options, system):
        
         system.l3.cpu_side = system.tol3bus.master
         system.l3.mem_side = system.membus.slave
-        l3latency = 55
+        l3latency = 54
         if options.mirage_mode_l3:
             if options.mirage_mode_l3 == "Baseline":
                 system.l3.tag_latency     = l3latency
@@ -153,13 +153,27 @@ def config_cache(options, system):
                 system.l3.p2_on_conflict = True
                 system.l3.cuckoo_on_conflict = True
             elif options.mirage_mode_l3 == "skew-vway-indirect":
-                system.l3.vwayCache = True
+                system.l3.indirectCache = True
                 system.l3.randomizedIndirectIndexing = True
                 system.l3.skewedCache = True
             else:
                 fatal("Used a mirage_mode that is not supported")
+            if (str(system.l3.indirectCache) == "True"):
+                assert str(system.l3.randomizedIndirectIndexing) == "True"
+                system.l3.TDR = options.l3_TDR #Set Tag-Data ratio for indirect
+                system.l3.tags = IndirectTags()    #Select tag design as indirect
+                system.l3.tags.assoc = options.l3_TDR*system.l3.tags.assoc                
+                system.l3.tags.size = str(int(float(str(options.l3_TDR*system.l3.size)))) + "B"
+                if(options.mirage_mode_l3 == "skew-vway-rand"):
+                    system.l3.tags.data_repl_policy = "random"
+                elif(options.mirage_mode_l3 == "skew-vway-indirect"):
+                    system.l3.tags.data_repl_policy = "random"
+                elif(options.mirage_mode_l3 == "skew-vway-rand-datareuserepl"):
+                    system.l3.tags.data_repl_policy = "reuse"
+                else:
+                    fatal("Used a mirage_mode that is not supported")
             if (str(system.l3.vwayCache) == "True"):
-                assert str(system.l3.randomizedIndexing) == "True" or str(system.l3.randomizedIndirectIndexing) == "True" 
+                assert str(system.l3.randomizedIndexing) == "True"
                 system.l3.TDR = options.l3_TDR #Set Tag-Data ratio for Vway
                 system.l3.tags = VwayTags()    #Select tag design as Vway
                 system.l3.tags.assoc = options.l3_TDR*system.l3.tags.assoc                
@@ -184,13 +198,17 @@ def config_cache(options, system):
                 system.l3.numSkews = options.l3_numSkews #Configure number of skews
                 system.l3.mem_size = str(getMaxMemAddr(system.mem_ranges)+1) + "B"
                 system.l3.tags.indexing_policy = SkewedAssocRandIndirect()
-                if ( (int(system.l3.numSkews) > 1) and (str(system.l3.vwayCache) == "True") ) :
+                if ( (int(system.l3.numSkews) > 1) and (str(system.l3.indirectCache) == "True") ) :
                     system.l3.replacement_policy = RandomSkewfairRP() 
                 elif ( (int(system.l3.numSkews) > 1) ) :
                     system.l3.replacement_policy = RandomRP() #For more than 1 skew, use Random Repl
                 
             #Set Cache Lookup Latency
             if ((str(system.l3.vwayCache) == "True") and (str(system.l3.randomizedIndexing) == "True")): # Lookup Latency is 24 for Vway + Rand (MIRAGE)
+                system.l3.tag_latency      = l3latency + options.l3_EncrLat + 1 #4
+                system.l3.tags.tag_latency = l3latency + options.l3_EncrLat + 1 #4
+            elif ((str(system.l3.indirectCache) == "True") and (str(system.l3.randomizedIndirectIndexing) == "True")): # Lookup Latency is 24 for Vway + Rand (MIRAGE)
+                print("Indirect and Indirect random indexing")
                 system.l3.tag_latency      = l3latency + options.l3_EncrLat + 1 #4
                 system.l3.tags.tag_latency = l3latency + options.l3_EncrLat + 1 #4
                 ##TODO: sequentialAccess = True & Data_latency = 1. Then tag_latency will be 25.
@@ -200,7 +218,7 @@ def config_cache(options, system):
             elif (str(system.l3.randomizedIndirectIndexing) == "True"): # Lookup Latency is 25 for Skewed Rand (Indirect index Cache)
                 system.l3.tag_latency     = l3latency + options.l3_EncrLat #3
                 system.l3.tags.tag_latency = l3latency + options.l3_EncrLat #3
-            elif (str(system.l3.vwayCache) == "True"): # Lookup Latency is 21 for only Vway-Cache
+            elif (str(system.l3.vwayCache) == "True" or str(system.l3.indirectCache) == "True"): # Lookup Latency is 21 for only Vway-Cache
                 system.l3.tag_latency     = l3latency + 1
                 system.l3.tags.tag_latency = l3latency + 1
     elif options.l2cache:
@@ -242,7 +260,7 @@ def config_cache(options, system):
                 system.l2.p2_on_conflict = True
                 system.l2.cuckoo_on_conflict = True
             elif options.mirage_mode_l2 == "skew-vway-indirect":
-                system.l2.vwayCache = True
+                system.l2.indirectCache = True
                 system.l2.randomizedIndirectIndexing = True
                 system.l2.skewedCache = True
             else:
@@ -356,17 +374,17 @@ def config_cache(options, system):
 
         if options.l2cache and options.l3cache:
             print(i)
-            if(i%2==0):
-                system.cpu[i].l2 =  l2_cache_class(clk_domain=system.cpu_clk_domain,
-                                    **_get_cache_opts('l2', options))
-                system.cpu[i].tol2bus =  L2XBar(clk_domain = system.cpu_clk_domain)
-                system.cpu[i].l2.cpu_side = system.cpu[i].tol2bus.master
-                system.cpu[i].l2.mem_side = system.tol3bus.slave
-                system.cpu[i].connectAllPorts(system.cpu[i].tol2bus, system.membus)
-            else:
+            
+            system.cpu[i].l2 =  l2_cache_class(clk_domain=system.cpu_clk_domain,
+                                **_get_cache_opts('l2', options))
+            system.cpu[i].tol2bus =  L2XBar(clk_domain = system.cpu_clk_domain)
+            system.cpu[i].l2.cpu_side = system.cpu[i].tol2bus.master
+            system.cpu[i].l2.mem_side = system.tol3bus.slave
+            
+            
                 #system.cpu[i].tol2bus = system.cpu[i-1].tol2bus
                 
-                system.cpu[i].connectAllPorts(system.cpu[i-1].tol2bus, system.membus)
+            system.cpu[i].connectAllPorts(system.cpu[i].tol2bus, system.membus)
             
            #system.cpu[i].connectAllPorts(system.cpu[i].tol2bus, system.membus)
             

@@ -109,7 +109,7 @@ def addNoISAOptions(parser):
                         help="""Top-level voltage for blocks running at system
                       power supply""")
     parser.add_argument("--sys-clock", action="store", type=str,
-                        default='1GHz',
+                        default='3GHz',
                         help="""Top-level clock for blocks running at system
                       speed""")
 

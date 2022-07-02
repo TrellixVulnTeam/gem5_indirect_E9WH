@@ -39,6 +39,8 @@ Source('sector_blk.cc')
 Source('sector_tags.cc')
 Source('super_blk.cc')
 Source('vway_tags.cc')
+Source('indirect_tags.cc')
 
 DebugFlag('VwayTags')
+DebugFlag('IndirectTags')
 GTest('dueling.test', 'dueling.test.cc', 'dueling.cc')

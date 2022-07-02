@@ -54,7 +54,7 @@ SkewedAssocRandIndirect::SkewedAssocRandIndirect(const Params &p)
   : BaseIndexingPolicy(p),NUM_SKEWING_FUNCTIONS(p.numSkews+2),
     NUM_WAYS_PER_SKEW(assoc/p.numSkews), mem_size(p.mem_size),
     randomizedIndirectIndexing(p.randomizedIndirectIndexing),
-    skewedCache(p.skewedCache)
+    skewedCache(p.skewedCache), assoc_effective(assoc + (TDR-1)*(assoc/TDR))
 {
 
   //DPRINTF("Size of Tag-Store for Skewed-Assoc-Randomized - Sets:%d, with Assoc:%d \n",numSets,assoc);
@@ -76,16 +76,14 @@ SkewedAssocRandIndirect::extractSet(const Addr addr, const uint32_t way) const
   int64_t physical_line_num = phy_lineaddress % lines_in_mem;
   int skew_id = 0;
   // Get skew-id from the way & encryption table
-  if(NUM_SKEWING_FUNCTIONS==2)
-    skew_id = way / NUM_WAYS_PER_SKEW;
-  else{
-    if(way > 16)
-      skew_id = (way-16) / NUM_SKEWING_FUNCTIONS + 2;
-    else
-      skew_id = way / 8;
-  }
+  
+  
+  if(way >= (assoc/TDR))
+    skew_id = ((way-(assoc/TDR)) / 4) + 2;
+  else
+    skew_id = way / 8;
   const std::vector<int64_t>* m_ela_table = &rand_table_vec[skew_id];
-
+  
   // Lookup table to get encrypted line number
   int64_t encrypted_line_num = (*m_ela_table)[physical_line_num];
 
@@ -94,6 +92,7 @@ SkewedAssocRandIndirect::extractSet(const Addr addr, const uint32_t way) const
   /*DPRINTF(gem5::debug::Cache, "extractSet=> Skew:%d, Address %lld, Line-Addr: %lld, PLN %lld, ELN %lld, Set %lld \n", \
            skew_id, addr,phy_lineaddress, physical_line_num,encrypted_line_num,cacheset);
   */
+  
   return  cacheset;
 }
 
@@ -112,11 +111,15 @@ std::vector<ReplaceableEntry*>
 SkewedAssocRandIndirect::getPossibleEntries(const Addr addr) const
 {
   std::vector<ReplaceableEntry*> entries;
-    
-  // For mirage: Parse all ways
-  for (uint32_t way = 0; way < assoc; ++way) {
+  //printf("Get possible entries in the indirect\n");
+  // For indirect: Parse all ways
+  uint32_t actual_way;
+  for (uint32_t way = 0; way < assoc_effective; ++way) {
     // Apply hash to get set, and get way entry in it
-    entries.push_back(sets[extractSet(addr, way)][way]);
+    actual_way= way;
+    if(way>=assoc)
+      actual_way = way - (assoc/TDR)/2;
+    entries.push_back(sets[extractSet(addr, way)][actual_way]);
   }
     
   return entries;

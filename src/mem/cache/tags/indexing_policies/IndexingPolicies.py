@@ -42,6 +42,8 @@ class BaseIndexingPolicy(SimObject):
 
     # Get the associativity
     assoc = Param.Int(Parent.assoc, "associativity")
+    #Tag to data ratio
+    TDR = Param.Float(Parent.TDR, "TAG to DATA ratio")
 
 class SetAssociative(BaseIndexingPolicy):
     type = 'SetAssociative'
@@ -72,3 +74,4 @@ class SkewedAssocRandIndirect(BaseIndexingPolicy):
     randomizedIndirectIndexing = Param.Bool(Parent.randomizedIndirectIndexing, "Enables Randomized Indirect Indexing with PRINCE")
     skewedCache = Param.Bool(Parent.skewedCache, "Enables skewed cache design")
     numSkews = Param.Unsigned(Parent.numSkews, "Number of skews")
+    
