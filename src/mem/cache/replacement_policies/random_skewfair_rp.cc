@@ -129,7 +129,16 @@ RandomSkewfairRP::getVictim(const ReplacementCandidates& candidates) const
       }
     }
   }
-
+  if(randomizedIndirectIndexing == true)
+  {
+    if(numSkews != 4)
+      panic("Number of Skews not as expected");
+    if((invalid_per_skew[0]>0) | (invalid_per_skew[1]>0))
+    {
+      invalid_per_skew[2] = 0;
+      invalid_per_skew[3] = 0;
+    }
+  }
   //DPRINTFN("Invalid Skews Are: \n");
   // for(int i=0;i<numSkews;i++){
   //   //DPRINTFN("Skew-%d: %d\n",i,invalid_per_skew[i]);

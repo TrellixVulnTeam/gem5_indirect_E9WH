@@ -94,6 +94,6 @@ chmod -R 700 $OUTPUT
     --cacheline_size=64 \
     --mem-size=8GB\
     --maxinsts=$MAX_INSTS \
-    --fast-forward=20000000000
+    --fast-forward=20000000000 \
     --mirage_mode_l3=$SCHEME --l3_numSkews=$L3_SKEWS --l3_TDR=$L3_TDR --l3_EncrLat=$L3_LAT \
-    --prog-interval=300Hz 
+    

@@ -27,6 +27,7 @@ runcpu --fake --config myconfig1 $BENCHMARK
 #compile the program
 cd build/build_base_mytest-m64.0000
 specmake
+specmake TARGET=$BENCHMARK
 
 
 
