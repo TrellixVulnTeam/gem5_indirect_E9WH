@@ -114,10 +114,11 @@ class IndirectTags : public BaseTags
     std::vector<uint64_t> blk_dataID;
     
     /** The reverse ptr from data-store to_tag-store. */    
-    std::vector<uint64_t> datablk_tagID;
+    //std::vector<uint64_t> datablk_tagID; //commented out by yonas 
 
     /** Data-Repl Re-use Bits*/    
-    std::vector<uint64_t> datablk_reuse;
+    //std::vector<uint64_t> datablk_reuse; //commented out by yonas 
+
     uint64_t  datablk_reuse_victimID;
     
     /** The number of blocks in data-store. */    
@@ -212,10 +213,10 @@ class IndirectTags : public BaseTags
             replacementPolicy->touch(blk->replacementData, pkt);
 
             // Increment data-reuse bits for datablk
-            uint64_t tagID = get_blk_tagID(blk);
-            uint64_t dataID = blk_dataID[tagID];
-            if(datablk_reuse[dataID] < DATAREUSE_MAX)
-                datablk_reuse[dataID]++;
+            //uint64_t tagID = get_blk_tagID(blk);
+            //uint64_t dataID = blk_dataID[tagID];
+            // if(datablk_reuse[dataID] < DATAREUSE_MAX)
+            //     datablk_reuse[dataID]++;
         }
 
         // The tag lookup latency is the same for a hit or a miss
@@ -276,12 +277,14 @@ class IndirectTags : public BaseTags
         //**DONE-TODO**: If tag-victim is invalid, and no vacant dataBlk:
         else if(!tag_victim->isValid() && (datarepl_get_vacant() == ((uint64_t)-1)) ){
 
-            //**DONE-TODO**: select random dataBlk for replacement (select_repl_datablk()).
-            uint64_t data_victim_index = datarepl_select_victim();
-            assert(data_victim_index != ((uint64_t)-1));
+            // //**DONE-TODO**: select random dataBlk for replacement (select_repl_datablk()).
+            // uint64_t data_victim_index = datarepl_select_victim();
+            // assert(data_victim_index != ((uint64_t)-1));
+
+            //ADDED BY YONAS
             
             //**DONE-TODO**: -- Get tagID of valid data-victim, and corresponding valid cacehBlk
-            uint64_t data_victim_tagID = datablk_tagID[data_victim_index];
+            uint64_t data_victim_tagID =  datarepl_select_victim();
             assert((data_victim_tagID != ((uint64_t)-1)) && (data_victim_tagID < numBlocks));
             CacheBlk* data_victim = &blks[data_victim_tagID] ;
             assert(data_victim->isValid());
@@ -363,15 +366,15 @@ class IndirectTags : public BaseTags
         uint64_t vacant_datablk_index = datarepl_get_vacant();
         assert((vacant_datablk_index != (uint64_t)-1) &&                \
                "Vacancy should've been created already by getVictim()\n");
-        assert((datablk_tagID[vacant_datablk_index] == (uint64_t)-1) && \
-               "Vacant datablk should not have a tag-blk pointing to it. \n" );
+        /* assert((datablk_tagID[vacant_datablk_index] == (uint64_t)-1) && \
+                "Vacant datablk should not have a tag-blk pointing to it. \n" ); */
         
         //**DONE-TODO** data-blk pointer in tag-blk.
         blk->data = &dataBlks[blkSize*vacant_datablk_index];
         blk_dataID[get_blk_tagID(blk)] = vacant_datablk_index;            
-        //**DONE-TODO** Set tagID pointer in datablk
-        datablk_tagID[vacant_datablk_index] = get_blk_tagID(blk);
-        datablk_reuse[vacant_datablk_index] = DATAREUSE_MIN ;
+        //**DONE-TODO** Set tagID pointer in datablk . removed by yonas
+        // datablk_tagID[vacant_datablk_index] = get_blk_tagID(blk);
+        // datablk_reuse[vacant_datablk_index] = DATAREUSE_MIN ;
         
         //**DONE-TODO** Remove the vacant datablk from data_repl queues
         datarepl_remove_vacant(vacant_datablk_index);            
@@ -458,36 +461,51 @@ class IndirectTags : public BaseTags
     uint64_t datarepl_select_victim(){
         assert(datarepl_vacant_queue.empty());
         
-        uint64_t data_victim_index = (uint64_t)-1;
 
-        if(data_repl_policy == DATA_REPL_RANDOM)
-            data_victim_index = mt_rand() % numDataBlocks;
-        else if(data_repl_policy == DATA_REPL_REUSE){
-            uint64_t num_attempts=0;
-            //Check until datablk_reuse[victimID] is 0
-            while(datablk_reuse[datablk_reuse_victimID]){
-                assert(datablk_reuse[datablk_reuse_victimID] <= DATAREUSE_MAX);                
-                //Decrement the reuse_count
-                datablk_reuse[datablk_reuse_victimID]--;
+        uint64_t tag_victim_index = (uint64_t)-1;
+        //reveser pointer implementation
+        // if(data_repl_policy == DATA_REPL_RANDOM)
+        //     data_victim_index = mt_rand() % numDataBlocks;
+        //no reverse pointer implementation --ADDED BY YONAS
+        CacheBlk* data_victim = NULL;
+        if(data_repl_policy == DATA_REPL_RANDOM){
+            do{
+                tag_victim_index=mt_rand() % numBlocks;
+                data_victim = &blks[tag_victim_index] ;
+                
 
-                //Check next data-victimID
-                datablk_reuse_victimID = (datablk_reuse_victimID+1) % numDataBlocks;
-                num_attempts++;
-                //assert(num_attempts <= (numDataBlocks*DATAREPL_MAX)) ;
-                if(num_attempts >=40)
-                    break;                
-            }
-            //Pick found victim
-            data_victim_index = datablk_reuse_victimID;
-            //Increment victimID PTR to point to next loc.
-            datablk_reuse_victimID = (datablk_reuse_victimID+1) % numDataBlocks;
-        } else
+
+            }while(!data_victim->isValid());
+           
+        }
+        //TODO- reuse based replacement policy
+        // else if(data_repl_policy == DATA_REPL_REUSE){
+        //     uint64_t num_attempts=0;
+        //     //Check until datablk_reuse[victimID] is 0
+        //     while(datablk_reuse[datablk_reuse_victimID]){
+        //         assert(datablk_reuse[datablk_reuse_victimID] <= DATAREUSE_MAX);                
+        //         //Decrement the reuse_count
+        //         datablk_reuse[datablk_reuse_victimID]--;
+
+        //         //Check next data-victimID
+        //         datablk_reuse_victimID = (datablk_reuse_victimID+1) % numDataBlocks;
+        //         num_attempts++;
+        //         //assert(num_attempts <= (numDataBlocks*DATAREPL_MAX)) ;
+        //         if(num_attempts >=40)
+        //             break;                
+        //     }
+        //     //Pick found victim
+        //     data_victim_index = datablk_reuse_victimID;
+        //     //Increment victimID PTR to point to next loc.
+        //     datablk_reuse_victimID = (datablk_reuse_victimID+1) % numDataBlocks;
+        // } 
+        else
             panic("Undefined Data Replacement Policy\n");
         
-        assert(data_victim_index < numDataBlocks);
-        assert(datablk_tagID[data_victim_index] != ((uint64_t)-1));
+        assert(tag_victim_index < numBlocks);
+        assert(tag_victim_index != ((uint64_t)-1));
 
-        return data_victim_index;
+        return tag_victim_index;
     }
     
 };

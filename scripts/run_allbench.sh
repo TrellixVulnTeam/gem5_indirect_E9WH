@@ -28,7 +28,11 @@ INST_TAKE_CHECKPOINT=100000
 #MAX_INSTS_CKPT= $((INST_TAKE_CHECKPOINT + 1)) 
 MAX_INSTS=1000000000
 
+#benchmarks
+
+BENCHS = {perlbench_r, exchange2_r, leela_r, mcf_r, nab_r, namd_r, parest_r, povray_r, xalancbmk_s}
 #simulate on gem5
+
 
 #get arguments
 go $BENCHMARK
@@ -97,5 +101,3 @@ chmod -R 700 $OUTPUT
     --fast-forward=20000000000 \
     --warmup-insts=10000000 \
     --mirage_mode_l3=$SCHEME --l3_numSkews=$L3_SKEWS --l3_TDR=$L3_TDR --l3_EncrLat=$L3_LAT \
-    --prog-interval=300MHz
-    

@@ -60,8 +60,8 @@ IndirectTags::IndirectTags(const Params &p)
      cache_size(p.cache_size),
      blks(p.size / p.block_size),
      blk_dataID(p.size / p.block_size),
-     datablk_tagID(p.cache_size / p.block_size),
-     datablk_reuse(p.cache_size / p.block_size),
+     //datablk_tagID(p.cache_size / p.block_size),
+     //datablk_reuse(p.cache_size / p.block_size),
      datablk_reuse_victimID(0),
      numDataBlocks(p.cache_size / p.block_size),
      sequentialAccess(p.sequential_access),
@@ -129,10 +129,10 @@ IndirectTags::tagsInit()
   }
 
   for (unsigned datablk_index = 0; datablk_index < numDataBlocks; datablk_index++) {
-        
+    //Not Used removed by yonas 
     //**DONE-TODO**:Initialize the dataBlk_tagID to -1.
-    datablk_tagID[datablk_index] = (uint64_t)-1;
-    datablk_reuse[datablk_index] = DATAREUSE_MIN ;
+    //datablk_tagID[datablk_index] = (uint64_t)-1;
+    //datablk_reuse[datablk_index] = DATAREUSE_MIN ;
 
     //**DONE-TODO**:Initialize the dataBlk_repl class to ensure all data-blocks are currently available.
     datarepl_add_vacant(datablk_index);
@@ -158,10 +158,10 @@ IndirectTags::invalidate(CacheBlk *blk)
   //**DONE-TODO**: reset the blk-> data.
   blk->data = NULL;
   blk_dataID[tagID] = (uint64_t)-1;
-    
-  //**DONE-TODO**: reset the tag-pointer in data-store (corrsponding to blk->data)
-  datablk_tagID[dataID] = (uint64_t)-1;
-  datablk_reuse[dataID] = DATAREUSE_MIN ;
+  //Not Used removed by yonas
+  //**DONE-TODO**:reset the tag-pointer in data-store (corrsponding to blk->data)
+  //datablk_tagID[dataID] = (uint64_t)-1;
+  //datablk_reuse[dataID] = DATAREUSE_MIN ;
 
   //**DONE-TODO**: signal that this data blk is vacant.
   datarepl_add_vacant(dataID);
