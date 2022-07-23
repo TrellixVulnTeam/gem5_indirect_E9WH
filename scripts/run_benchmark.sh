@@ -28,20 +28,41 @@ INST_TAKE_CHECKPOINT=100000
 #MAX_INSTS_CKPT= $((INST_TAKE_CHECKPOINT + 1)) 
 MAX_INSTS=1000000000
 
+#benchmarks
+
+BENCHS = {perlbench_r, exchange2_r, leela_r, mcf_r, nab_r, namd_r, parest_r, povray_r, xalancbmk_s}
 #simulate on gem5
 
+
 #get arguments
+
 go $BENCHMARK
+GCC_S=gcc_s
+if [ "$BENCHMARK" == "$GCC_S" ]; then
+    BENCHMARK="gcc"
+else
+    echo $BENCHMARK
+fi
+
 cd run/run_base_refspeed_mytest-m64.0000
 cd run/run_base_refrate_mytest-m64.0000
 specinvoke -n >> get.out
 
-args=`grep "^../run_base_refrate_mytest-m64.0000/${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-12 -d ' ' | cut -f 1 -d '>' | head -1` 
+cd ../../build/build_base_mytest-m64.0000/
+for e in *$BENCHMARK
+    do
+        BENCHMARK=$e
+        echo $e
+    done
+cd ../../run/run_base_refspeed_mytest-m64.0000
+cd ../../run/run_base_refrate_mytest-m64.0000
+
+args=`grep "^../run_base_refrate_mytest-m64.0000/${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-100 -d ' ' | cut -f 1 -d '>' | head -1` 
 if [ ${#args} -gt 0 ]; then
     echo "good args"
 else
     echo "bad args"
-    args=`grep "^../run_base_refspeed_mytest-m64.0000/${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-12 -d ' ' | cut -f 1 -d '>' | head -1`
+    args=`grep "^../run_base_refspeed_mytest-m64.0000/*${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-100 -d ' ' | cut -f 1 -d '>' | head -1`
 fi
 
 # Ckpt Dir
@@ -52,11 +73,22 @@ mkdir -p $CKPT_OUT_DIR
 echo "option argument "
 echo $args
 EXE="$BENCHMARK"
-for e in ../../build/build_base_mytest-m64.0000/*$BENCHMARK
-do
-     EXE=$e
-     echo $e
-done
+
+Cactus="cactuBSSN_r"
+
+if [[ "$BENCHMARK" == "$Cactus" ]]; then
+    e=../../build/build_base_mytest-m64.0000/cactusBSSN_r
+    EXE=$e
+else
+    echo "not equal"
+    echo $BENCHMARK
+    echo $Cactus
+    for e in ../../build/build_base_mytest-m64.0000/*$BENCHMARK
+    do
+        EXE=$e
+        echo $e
+    done
+fi
 # # checkpoint gem5 
 # $GEM5_PATH/build/X86/gem5.opt \
 #     $GEM5_PATH/configs/example/se.py \
@@ -97,5 +129,4 @@ chmod -R 700 $OUTPUT
     --fast-forward=20000000000 \
     --warmup-insts=10000000 \
     --mirage_mode_l3=$SCHEME --l3_numSkews=$L3_SKEWS --l3_TDR=$L3_TDR --l3_EncrLat=$L3_LAT \
-    --prog-interval=300MHz
     

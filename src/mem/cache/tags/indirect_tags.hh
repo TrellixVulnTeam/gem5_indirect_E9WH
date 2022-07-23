@@ -422,31 +422,61 @@ class IndirectTags : public BaseTags
   private:
     
     //Define data_repl: Maintains a queue of vacant indices.
-    std::queue<uint64_t> datarepl_vacant_queue;
+    //std::queue<uint64_t> datarepl_vacant_queue;
+    std::uint64_t free_index;
+    std::uint64_t counter;
     
     //**DONE-TODO**: add_vacant: adds index to the end of this queue.
     void datarepl_add_vacant(uint64_t datablk_index){
-        datarepl_vacant_queue.push(datablk_index);
-        DPRINTF(IndirectTags,"Datablk_index:%llu, numDataBlocks:%llu, vacantQueue_sz:%llu\n",datablk_index, numDataBlocks,datarepl_vacant_queue.size());
-        assert(datarepl_vacant_queue.size() <= numDataBlocks);        
+        //write the current free_index tail to the data block 
+        uint64_t *data_blk = (uint64_t*)&dataBlks[datablk_index*blkSize];
+
+        *data_blk = free_index; 
+       
+        //free index points to the new vacant(tail) of free list
+        free_index = datablk_index;
+
+
+        // datarepl_vacant_queue.push(datablk_index);
+        // DPRINTF(IndirectTags,"Datablk_index:%llu, numDataBlocks:%llu, vacantQueue_sz:%llu\n",datablk_index, numDataBlocks,datarepl_vacant_queue.size());
+        // assert(datarepl_vacant_queue.size() <= numDataBlocks);        
     }
 
     //**DONE-TODO**: get_vacant: gets the index at the top of this queue.
     // Returns (uint64_t)-1 if there is no available index in the queue.
     uint64_t datarepl_get_vacant(){
 
-        if(datarepl_vacant_queue.empty()){
-            assert(datarepl_vacant_queue.size() == 0);
+        //return tail of the free list
+        if(free_index < numDataBlocks)
+            return free_index;
+        else
             return ((uint64_t)-1);
-        } else {
-            return datarepl_vacant_queue.front();
-        }
+            
+        // if(datarepl_vacant_queue.empty()){
+        //     assert(datarepl_vacant_queue.size() == 0);
+        //     return ((uint64_t)-1);
+        // } else {
+        //     return datarepl_vacant_queue.front();
+        // }
     }
 
     //**DONE-TODO**: Removes the top-of-the-queue
     void datarepl_remove_vacant(uint64_t datablk_index){
-        assert(datarepl_vacant_queue.front() == datablk_index);
-        datarepl_vacant_queue.pop();
+        assert(free_index == datablk_index);
+        //if free and counter are same increment the pointer
+        if(free_index == counter){
+            if(free_index < numDataBlocks)
+                free_index = ++counter;
+        }
+        //else load the remove the tail and point to the next tail 
+        else{
+            
+            uint64_t *data_blk = (uint64_t*)&dataBlks[datablk_index*blkSize];
+            free_index = *data_blk;
+            
+        }
+        // assert(datarepl_vacant_queue.front() == datablk_index);
+        // datarepl_vacant_queue.pop();
         return;
     }
 
@@ -459,7 +489,7 @@ class IndirectTags : public BaseTags
     //**DONE-TODO**: Select random dataBlk for replacement
     // Returns random victim data-blk index. Makes sure that datablk_tagID[victimindex] != -1.
     uint64_t datarepl_select_victim(){
-        assert(datarepl_vacant_queue.empty());
+        assert(!(free_index<numDataBlocks));
         
 
         uint64_t tag_victim_index = (uint64_t)-1;

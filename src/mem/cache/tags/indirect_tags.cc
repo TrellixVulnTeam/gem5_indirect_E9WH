@@ -109,6 +109,8 @@ void
 IndirectTags::tagsInit()
 {
   // Initialize all blocks
+  free_index = 0;
+  counter = 0;
   for (unsigned blk_index = 0; blk_index < numBlocks; blk_index++) {
     // Locate next cache block
     CacheBlk* blk = &blks[blk_index];
@@ -128,16 +130,16 @@ IndirectTags::tagsInit()
     blk->replacementData = replacementPolicy->instantiateEntry();
   }
 
-  for (unsigned datablk_index = 0; datablk_index < numDataBlocks; datablk_index++) {
-    //Not Used removed by yonas 
-    //**DONE-TODO**:Initialize the dataBlk_tagID to -1.
-    //datablk_tagID[datablk_index] = (uint64_t)-1;
-    //datablk_reuse[datablk_index] = DATAREUSE_MIN ;
+  // for (unsigned datablk_index = 0; datablk_index < numDataBlocks; datablk_index++) {
+  //   //Not Used removed by yonas 
+  //   //**DONE-TODO**:Initialize the dataBlk_tagID to -1.
+  //   //datablk_tagID[datablk_index] = (uint64_t)-1;
+  //   //datablk_reuse[datablk_index] = DATAREUSE_MIN ;
 
-    //**DONE-TODO**:Initialize the dataBlk_repl class to ensure all data-blocks are currently available.
-    datarepl_add_vacant(datablk_index);
+  //   //**DONE-TODO**:Initialize the dataBlk_repl class to ensure all data-blocks are currently available.
+  //   //datarepl_add_vacant(datablk_index);
     
-  }
+  // }
  
 }
 

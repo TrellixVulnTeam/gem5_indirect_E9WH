@@ -40,12 +40,21 @@ cd run/run_base_refspeed_mytest-m64.0000
 cd run/run_base_refrate_mytest-m64.0000
 specinvoke -n >> get.out
 
+cd ../../build/build_base_mytest-m64.0000/
+for e in *$BENCHMARK
+    do
+        BENCHMARK=$e
+        echo $e
+    done
+cd ../../run/run_base_refspeed_mytest-m64.0000
+cd ../../run/run_base_refrate_mytest-m64.0000
+
 args=`grep "^../run_base_refrate_mytest-m64.0000/${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-12 -d ' ' | cut -f 1 -d '>' | head -1` 
 if [ ${#args} -gt 0 ]; then
     echo "good args"
 else
     echo "bad args"
-    args=`grep "^../run_base_refspeed_mytest-m64.0000/${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-12 -d ' ' | cut -f 1 -d '>' | head -1`
+    args=`grep "^../run_base_refspeed_mytest-m64.0000/*${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-12 -d ' ' | cut -f 1 -d '>' | head -1`
 fi
 
 # Ckpt Dir
@@ -56,11 +65,22 @@ mkdir -p $CKPT_OUT_DIR
 echo "option argument "
 echo $args
 EXE="$BENCHMARK"
-for e in ../../build/build_base_mytest-m64.0000/*$BENCHMARK
-do
-     EXE=$e
-     echo $e
-done
+
+Cactus="cactuBSSN_r"
+
+if [[ "$BENCHMARK" == "$Cactus" ]]; then
+    e=../../build/build_base_mytest-m64.0000/cactusBSSN_r
+    EXE=$e
+else
+    echo "not equal"
+    echo $BENCHMARK
+    echo $Cactus
+    for e in ../../build/build_base_mytest-m64.0000/*$BENCHMARK
+    do
+        EXE=$e
+        echo $e
+    done
+fi
 # # checkpoint gem5 
 # $GEM5_PATH/build/X86/gem5.opt \
 #     $GEM5_PATH/configs/example/se.py \
