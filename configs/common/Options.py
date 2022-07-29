@@ -182,11 +182,37 @@ def addNoISAOptions(parser):
 
 # Add common options that assume a non-NULL ISA.
 
+def addSpec2006Options(parser):
+    parser.add_argument("-b", "--benchmark",\
+            type=str, default="",\
+            help="The SPEC benchmark to be loaded."
+            )
+    parser.add_argument("--benchmark-stdout",\
+            type=str, default="",\
+            help="Absolute path for stdout redirection for the benchmark."
+            )
+    parser.add_argument("--benchmark-stderr",
+            type=str, default="",\
+            help="Absolute path for stderr redirection for the benchmark."
+            )
+    parser.add_argument("--spec-2006-bench",
+            action="store_true",
+            help="use spec 2006 benchmarks as workloads"
+            )
+    parser.add_argument("--spec-2017-bench",
+            action="store_true",
+            help="use spec 2017 benchmarks as workloads"
+            )
+    parser.add_argument("--spec-size",
+            default = "ref",
+            choices=['ref', 'train', 'test'],
+            help="spec input size for 2017"
+            )
 
 def addCommonOptions(parser):
     # start by adding the base options that do not assume an ISA
     addNoISAOptions(parser)
-
+    addSpec2006Options(parser)
     # system options
     parser.add_argument("--list-cpu-types",
                         action=ListCpu, nargs=0,

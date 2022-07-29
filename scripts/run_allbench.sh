@@ -34,53 +34,7 @@ BENCHS = {perlbench_r, exchange2_r, leela_r, mcf_r, nab_r, namd_r, parest_r, pov
 #simulate on gem5
 
 
-#get arguments
-go $BENCHMARK
-cd run/run_base_refspeed_mytest-m64.0000
-cd run/run_base_refrate_mytest-m64.0000
-specinvoke -n >> get.out
 
-cd ../../build/build_base_mytest-m64.0000/
-for e in *$BENCHMARK
-    do
-        BENCHMARK=$e
-        echo $e
-    done
-cd ../../run/run_base_refspeed_mytest-m64.0000
-cd ../../run/run_base_refrate_mytest-m64.0000
-
-args=`grep "^../run_base_refrate_mytest-m64.0000/${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-12 -d ' ' | cut -f 1 -d '>' | head -1` 
-if [ ${#args} -gt 0 ]; then
-    echo "good args"
-else
-    echo "bad args"
-    args=`grep "^../run_base_refspeed_mytest-m64.0000/*${BENCHMARK}_base.mytest-m64" get.out | cut -f 2-12 -d ' ' | cut -f 1 -d '>' | head -1`
-fi
-
-# Ckpt Dir
-CKPT_OUT_DIR=$CKPT_PATH/$BENCHMARK-1-ref-x86
-echo "checkpoint directory: " $CKPT_OUT_DIR
-mkdir -p $CKPT_OUT_DIR
-
-echo "option argument "
-echo $args
-EXE="$BENCHMARK"
-
-Cactus="cactuBSSN_r"
-
-if [[ "$BENCHMARK" == "$Cactus" ]]; then
-    e=../../build/build_base_mytest-m64.0000/cactusBSSN_r
-    EXE=$e
-else
-    echo "not equal"
-    echo $BENCHMARK
-    echo $Cactus
-    for e in ../../build/build_base_mytest-m64.0000/*$BENCHMARK
-    do
-        EXE=$e
-        echo $e
-    done
-fi
 # # checkpoint gem5 
 # $GEM5_PATH/build/X86/gem5.opt \
 #     $GEM5_PATH/configs/example/se.py \
@@ -106,11 +60,14 @@ mkdir -p $OUTPUT
 chmod -R 700 $OUTPUT
 
 
- $GEM5_PATH/build/X86/gem5.opt --verbose --outdir=$OUTPUT -r -e --stdout-file=$OUTPUT/stdout.txt --stderr-file=$OUTPUT/stderr.txt\
-    /$GEM5_PATH/configs/example/se.py\
+ $GEM5_PATH/build/X86/gem5.opt --outdir=$OUTPUT  -r -e --stdout-file=$OUTPUT/stdout.txt --stderr-file=$OUTPUT/stderr.txt\
+    $GEM5_PATH/configs/spec2017/se_spec17.py\
+    --benchmark=$BENCHMARK \
+    --benchmark-stdout=$OUTPUT/$BENCHMARK.out \
+    --benchmark-stderr=$OUTPUT/$BENCHMARK.err \
+    --spec-2017-bench --spec-size ref \
+    --arch=ARM \
     --num-cpus=16 \
-    --cmd="$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE;$EXE" \
-    --options="$args;$args;$args;$args;$args;$args;$args;$args;$args;$args;$args;$args;$args;$args;$args;$args;" \
     --cpu-type TimingSimpleCPU \
     --caches --l2cache --l3cache \
     --l1d_size=32kB --l1i_size=32kB --l2_size=256kB --l3_size=16MB \
@@ -121,3 +78,4 @@ chmod -R 700 $OUTPUT
     --fast-forward=20000000000 \
     --warmup-insts=10000000 \
     --mirage_mode_l3=$SCHEME --l3_numSkews=$L3_SKEWS --l3_TDR=$L3_TDR --l3_EncrLat=$L3_LAT \
+    
