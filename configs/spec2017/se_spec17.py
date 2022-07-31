@@ -88,22 +88,44 @@ def get_spec_2017_processes(args):
     benchmarks = args.benchmark.split(';')
     stdouts = args.benchmark_stdout.split(';')
     stderrs = args.benchmark_stderr.split(';')
-    if not args.arch:
-        print("No Arch(ARM, RISCV) specified. Exiting!\n", file=sys.stderr)
-        sys.exit(1)
-    spec17 = Spec17(arch_suffix[args.arch], args.spec_size)
-    num_processes = len(benchmarks)
-    multiprocesses = []
-    assert len(stderrs) == len(benchmarks)
-    assert len(stdouts) == len(benchmarks)
-    index = 0
-    for bm in benchmarks:
-        proc = get_one_spec_2017_process(spec17, bm)
-        proc.output = stdouts[index]
-        proc.errout = stderrs[index]
-        multiprocesses.append(proc)
+    if len(benchmarks)==1 and args.num_cpus > 1:
+        if not args.arch:
+            print("No Arch(ARM, RISCV) specified. Exiting!\n", file=sys.stderr)
+            sys.exit(1)
+        spec17 = Spec17(arch_suffix[args.arch], args.spec_size)
+        num_processes = len(benchmarks)
+        multiprocesses = []
+        assert len(stderrs) == len(benchmarks)
+        assert len(stdouts) == len(benchmarks)
+        index = 0
+        np = args.num_cpus
+        bm=benchmarks[0]
+        for i in range(np):
+            proc = get_one_spec_2017_process(spec17, bm)
+            proc.output = stdouts[index]
+            proc.errout = stderrs[index]
+            multiprocesses.append(proc)
+            index += 1
+        return multiprocesses, num_processes
+        
 
-    return multiprocesses, 1
+    else:
+        if not args.arch:
+            print("No Arch(ARM, RISCV) specified. Exiting!\n", file=sys.stderr)
+            sys.exit(1)
+        spec17 = Spec17(arch_suffix[args.arch], args.spec_size)
+        num_processes = len(benchmarks)
+        multiprocesses = []
+        assert len(stderrs) == len(benchmarks)
+        assert len(stdouts) == len(benchmarks)
+        index = 0
+        for bm in benchmarks:
+            proc = get_one_spec_2017_process(spec17, bm)
+            proc.output = stdouts[index]
+            proc.errout = stderrs[index]
+            multiprocesses.append(proc)
+            index += 1
+        return multiprocesses, 1
 
 
 def get_processes(args):
