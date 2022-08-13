@@ -11,6 +11,6 @@ else
 
 fi
 
-./run_benchmark.sh $BENCHMARK Baseline 1 1.00 0 & \
-./run_benchmark.sh $BENCHMARK skew-vway-rand 2 1.75 3 & \
-./run_benchmark.sh $BENCHMARK skew-vway-indirect 4 1.50 3
+./run_ones.sh $BENCHMARK Baseline 1 1.00 0 & \
+./run_ones.sh $BENCHMARK skew-vway-rand 2 1.75 3 & \
+./run_ones.sh $BENCHMARK skew-vway-indirect 4 1.50 3

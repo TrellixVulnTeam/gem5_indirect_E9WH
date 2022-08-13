@@ -32,7 +32,7 @@ MAX_INSTS=1000000000
 
 PERL=perlbench 
 GCC=gcc
-LEELA2=leela
+GCC2=gcc
 LEELA=leela
 MCF=mcf
 NAB=nab 
@@ -46,7 +46,6 @@ DEEPS=deepsjeng
 IMAGICK=imagick
 LBM=lbm
 XAL=xalancbmk
-OMNETPP=omnetpp
 
 
 #simulate on gem5
@@ -77,25 +76,23 @@ fi
 mkdir -p $OUTPUT
 chmod -R 700 $OUTPUT
 
-BENCHALL="$PERL;$OMNETPP;$LEELA2;$LEELA;$MCF;$NAB;$NAMD;$POVRAY;$XZ;$BWAVES;$BLENDER;$CACTU;$DEEPS;$IMAGICK;$LBM;$XAL"
-STDOUTALL="$OUTPUT/$PERL.out;$OUTPUT/$OMNETPP.out;$OUTPUT/$LEELA2.out;$OUTPUT/$LEELA.out;$OUTPUT/$MCF.out;$OUTPUT/$NAB.out;$OUTPUT/$NAMD.out;$OUTPUT/$POVRAY.out;$OUTPUT/$XZ.out;$OUTPUT/$BWAVES.out;$OUTPUT/$BLENDER.out;$OUTPUT/$CACTU.out;$OUTPUT/$DEEPS.out;$OUTPUT/$IMAGICK.out;$OUTPUT/$LBM.out;$OUTPUT/$XAL.out"
-STDERRALL="$OUTPUT/$PERL.err;$OUTPUT/$OMNETPP.err;$OUTPUT/$LEELA2.err;$OUTPUT/$LEELA.err;$OUTPUT/$MCF.err;$OUTPUT/$NAB.err;$OUTPUT/$NAMD.err;$OUTPUT/$POVRAY.err;$OUTPUT/$XZ.err;$OUTPUT/$BWAVES.err;$OUTPUT/$BLENDER.err;$OUTPUT/$CACTU.err;$OUTPUT/$DEEPS.err;$OUTPUT/$IMAGICK.err;$OUTPUT/$LBM.err;$OUTPUT/$XAL.err"
+
+
  $GEM5_PATH/build/X86/gem5.opt --outdir=$OUTPUT  -r -e --stdout-file=$OUTPUT/stdout.txt --stderr-file=$OUTPUT/stderr.txt\
     $GEM5_PATH/configs/spec2017/se_spec17.py\
-    --benchmark=$BENCHALL \
-    --benchmark-stdout=$STDOUTALL \
-    --benchmark-stderr=$STDERRALL \
+    --benchmark=$BENCHMARK \
+    --benchmark-stdout=$OUTPUT/$BENCHMARK.out \
+    --benchmark-stderr=$OUTPUT/$BENCHMARK.err \
     --spec-2017-bench --spec-size ref \
     --arch=ARM \
-    --num-cpus=16 \
+    --num-cpus=1 \
     --cpu-type TimingSimpleCPU \
     --caches --l2cache --l3cache \
     --l1d_size=32kB --l1i_size=32kB --l2_size=256kB --l3_size=16MB \
     --l1d_assoc=8  --l1i_assoc=8 --l2_assoc=8 --l3_assoc=16  \
     --cacheline_size=64 \
-    --mem-size=16GB\
+    --mem-size=8GB\
     --maxinsts=$MAX_INSTS \
     --fast-forward=20000000000 \
     --warmup-insts=10000000 \
     --mirage_mode_l3=$SCHEME --l3_numSkews=$L3_SKEWS --l3_TDR=$L3_TDR --l3_EncrLat=$L3_LAT \
-    --prog-interval=3Hz
